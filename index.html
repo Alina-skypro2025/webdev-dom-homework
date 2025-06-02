@@ -30,9 +30,7 @@
   </body>
 
   <script>
-    "use strict";
-
-    const nameInput = document.querySelector(".add-form-name");
+     const nameInput = document.querySelector(".add-form-name");
     const commentInput = document.querySelector(".add-form-text");
     const addButton = document.querySelector(".add-form-button");
     const commentsList = document.querySelector(".comments");
@@ -54,11 +52,20 @@
       }
     ];
 
+    function sanitizeHTML(str) {
+      return str
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
     function renderComments() {
-      commentsList.innerHTML = ""; // Очистка перед рендером
+      commentsList.innerHTML = "";
+
       comments.forEach((comment, index) => {
         commentsList.innerHTML += `
-          <li class="comment">
+          <li class="comment" data-index="${index}">
             <div class="comment-header">
               <div>${comment.name}</div>
               <div>${comment.date}</div>
@@ -76,32 +83,38 @@
               </div>
             </div>
           </li>
-        `;
+        ` ;
       });
 
       document.querySelectorAll(".like-button").forEach((button) => {
-        button.addEventListener("click", () => {
+        button.addEventListener("click", (event) => {
+          event.stopPropagation(); 
           const index = button.dataset.index;
           const comment = comments[index];
 
-          if (comment.isLiked) {
-            comment.isLiked = false;
-            comment.likes -= 1;
-          } else {
-            comment.isLiked = true;
-            comment.likes += 1;
-          }
+          comment.isLiked = !comment.isLiked;
+          comment.likes += comment.isLiked ? 1 : -1;
 
-          renderComments(); 
+          renderComments();
+        });
+      });
+
+      document.querySelectorAll(".comment").forEach((commentEl) => {
+        commentEl.addEventListener("click", () => {
+          const index = commentEl.dataset.index;
+          const comment = comments[index];
+
+          commentInput.value = `> ${comment.text}\n${comment.name}, ` ;
+          commentInput.focus();
         });
       });
     }
-
+    
     addButton.addEventListener("click", () => {
       const name = nameInput.value.trim();
-      const comment = commentInput.value.trim();
+      const text = commentInput.value.trim();
 
-      if (!name || !comment) {
+      if (!name || !text) {
         alert("Пожалуйста, заполните оба поля");
         return;
       }
@@ -109,10 +122,11 @@
       const now = new Date();
       const dateString = now.toLocaleDateString();
       const timeString = now.toLocaleTimeString();
+
       comments.push({
-        name: name,
+        name: sanitizeHTML(name),
         date: `${dateString} ${timeString}`,
-        text: comment,
+        text: sanitizeHTML(text),
         likes: 0,
         isLiked: false
       });
@@ -120,9 +134,9 @@
       nameInput.value = "";
       commentInput.value = "";
 
-      renderComments(); 
+      renderComments();
     });
 
-    renderComments(); 
+    renderComments();
   </script>
 </html>
